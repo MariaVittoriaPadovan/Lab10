@@ -14,6 +14,22 @@ class Model:
         """
         # TODO
 
+        self._grafo = nx.Graph()
+        for nodo in self._nodes:
+            self._grafo.add_node(nodo)
+''' vista dal prof ma come funziona?
+        # SECONDO MODO, CON 619 QUERY A CERCARE I NODI VICINI
+        conta = 0
+        for u in self._grafo:
+            connessioniAVicini = DAO.cercaViciniAHub(u)
+            for spedizione in connessioniAVicini:
+                HubArrivo = self._dizionario_fermate[spedizione.id_hub_origine]
+                self._grafo.add_edge(u, fermataArrivo)
+                print(f"Aggiunto arco tra {u} e {fermataArrivo}")
+                print(len(self._grafo.edges()))
+
+        print(self._grafo)
+'''
     def get_num_edges(self):
         """
         Restituisce il numero di Tratte (edges) del grafo
