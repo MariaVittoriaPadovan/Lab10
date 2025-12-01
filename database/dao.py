@@ -19,11 +19,44 @@ class DAO:
         cursore = conn.cursor(dictionary=True)
         cursore.execute(query)
         for riga in cursore:
-            hub = Hub(riga["id"], riga["codice"], riga["nome"], riga["citta"], riga["stato"], riga["latitudine"], riga["longitudine"])
+            hub = Hub(
+                riga["id"],
+                riga["codice"],
+                riga["nome"],
+                riga["citta"],
+                riga["stato"],
+                riga["latitudine"],
+                riga["longitudine"])
             risultato.append(hub)
         cursore.close()
         conn.close()
         return risultato # Restituisco lista di oggetti Hub (DTO)
+
+    @staticmethod
+    def get_all_spedizioni():
+        conn = DBConnect.get_connection()
+        risultato = []
+        query = "SELECT * FROM spedizione"
+        cursore = conn.cursor(dictionary=True)
+        cursore.execute(query)
+
+        for riga in cursore:
+            spedizione = Spedizione(
+                riga["id"],
+                riga["id_compagnia"],
+                riga["numero_tracking"],
+                riga["id_hub_origine"],
+                riga["id_hub_destinazione"],
+                riga["data_ritiro_programmata"],
+                riga["distanza"],
+                riga["data_consegna"],
+                riga["valore_merce"]
+            )
+            risultato.append(spedizione)
+
+        cursore.close()
+        conn.close()
+        return risultato
 
     @staticmethod
     def esisteConnessioneTra(u: Hub, v: Hub):
@@ -36,38 +69,41 @@ class DAO:
         WHERE s.id_hub_origine = %s AND s.id_hub_destinazione = %s
         ''')
         cursore = conn.cursor(dictionary=True)
-        cursore.execute(query, (u.id_hub_origine, v.id_hub_destinazione))  # Parametri
+        cursore.execute(query, (u.id, v.id))  # Parametri
+
         for riga in cursore:
             risultato.append(riga)
-            print(riga)
+
         cursore.close()
         conn.close()
         return risultato
 
     @staticmethod
     def cercaViciniAHub(u: Hub):
-        # Cerco gli Hub collegati a quello passato come parametro
+        # Cerco gli Hub collegati a quello passato come parametro, vedo tutte le spedizioni in uscita da un hub
         conn = DBConnect.get_connection()
         risultato = []
         query = '''
         SELECT * 
-        FROM spdizione s 
+        FROM spedizione s 
         WHERE s.id_hub_origine = %s
         '''
 
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(query, (u.id_hub_origine,))  # Parametro con (, )
-        for riga in cursor:
-            spedizione = Spedizione(riga["id"],
-                                      riga["id_compagnia"],
-                                      riga["id_hub_origine"],
-                                      riga["id_hub_destinazione"],
-                                     riga["data_ritiro_programmata"],
-                                     riga["distanza"],
-                                     riga["data_consegna"],
-                                     riga["valore_merce"])
+        cursore = conn.cursor(dictionary=True)
+        cursore.execute(query, (u.id,))  # Parametro con (, )
+        for riga in cursore:
+            spedizione = Spedizione(
+                riga["id"],
+                riga["id_compagnia"],
+                riga["id_hub_origine"],
+                riga["id_hub_destinazione"],
+                riga["data_ritiro_programmata"],
+                riga["distanza"],
+                riga["data_consegna"],
+                riga["valore_merce"]
+            )
             risultato.append(spedizione)
-            print(riga)
-        cursor.close()
+
+        cursore.close()
         conn.close()
         return risultato

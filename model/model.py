@@ -14,28 +14,55 @@ class Model:
         """
         # TODO
 
-        self._grafo = nx.Graph()
-        for nodo in self._nodes:
-            self._grafo.add_node(nodo)
-''' vista dal prof ma come funziona?
-        # SECONDO MODO, CON 619 QUERY A CERCARE I NODI VICINI
-        conta = 0
-        for u in self._grafo:
-            connessioniAVicini = DAO.cercaViciniAHub(u)
-            for spedizione in connessioniAVicini:
-                HubArrivo = self._dizionario_fermate[spedizione.id_hub_origine]
-                self._grafo.add_edge(u, fermataArrivo)
-                print(f"Aggiunto arco tra {u} e {fermataArrivo}")
-                print(len(self._grafo.edges()))
+        self.G = nx.Graph() #reset del grafo
 
-        print(self._grafo)
-'''
+        self._nodes=DAO.readAllHub() #carico gli hub
+
+        dizionario_hub={} #id_hub : oggetto Hub
+        for nodo in self._nodes:
+            dizionario_hub[nodo.id]=nodo
+
+        #aggiungo i nodi
+        for nodo in self._nodes:
+            self.G.add_node(nodo)
+
+        self._edges=DAO.get_all_spedizioni() #carico tutte le spedizioni
+
+        #raggruppo tutte le spedizioni tra due archi in entrambe le direzioni(da A a B e da B ad A)
+        # in un'unica tratta per poter calcolare il guadagno medio di una signola tratta
+        tratte={} #la chiave è la tratta (ida,idb) : il valore è la lista dei valori_merce(di tutte le spedizioni tra quei due hub)
+        for spedizione in self._edges:
+            A = spedizione.id_hub_origine
+            B = spedizione.id_hub_destinazione
+
+            tratta = (min(A, B), max(A, B))
+
+            if tratta not in tratte:
+                tratte[tratta] = []
+            tratte[tratta].append(spedizione.valore_merce)
+
+        #creo gli archi
+        #uso il metodo dizionario.items() che restituisce gli elementi del dizionario
+        # come una lista di tuple (chiave, valore) su cui posso iterare
+        for (ida, idb), valori in tratte.items(): #chiave=(ida,idb) : valori= lista dei valori_merce
+            media = sum(valori) / len(valori)
+
+            if media >= threshold:
+                #uso il metodo dizionario.get() per accedere al valore associato alla chiave
+                hubA = dizionario_hub.get(ida)
+                hubB = dizionario_hub.get(idb)
+
+                if hubA and hubB:
+                    self.G.add_edge(hubA, hubB, weight=media) #aggiungo l'arco
+
+
     def get_num_edges(self):
         """
         Restituisce il numero di Tratte (edges) del grafo
         :return: numero di edges del grafo
         """
         # TODO
+        return self.G.number_of_edges()
 
     def get_num_nodes(self):
         """
@@ -43,6 +70,7 @@ class Model:
         :return: numero di nodi del grafo
         """
         # TODO
+        return self.G.number_of_nodes()
 
     def get_all_edges(self):
         """
@@ -50,4 +78,10 @@ class Model:
         :return: gli edges del grafo con gli attributi (il weight)
         """
         # TODO
+        lista_tratte = []
+        for u, v, d in self.G.edges(data=True):
+            # u e v sono gli oggetti Hub, d è un dizionario con gli attributi
+            lista_tratte.append((u, v, d['weight']))
+        return lista_tratte
+
 
